@@ -361,8 +361,8 @@
       cube.update(ground);
 
       camera.position.x = cube.position.x;
-      camera.position.z = cube.position.z + 8;
-      camera.position.y = cube.position.y + 3;
+      camera.position.z = cube.position.z + 3.5;
+      camera.position.y = cube.position.y + 2;
       camera.lookAt(cube.position.x, cube.position.y + 1, cube.position.z);
 
       enemies.forEach((enemy, i) => {
