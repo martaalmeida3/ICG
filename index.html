@@ -10,7 +10,8 @@
     {
       "imports": {
         "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/"
+        "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/",
+        "three/addons/stylized_coin.glb": "https://raw.githubusercontent.com/yourusername/yourrepo/main/assets/stylized_coin.glb"
       }
     }
   </script>
@@ -37,29 +38,87 @@
     #lives {
       left: 10px;
     }
+
+    #pause {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 40px;
+      color: white;
+      text-shadow: 2px 2px 4px black;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 30px 60px;
+      border-radius: 20px;
+      letter-spacing: 2px;
+    }
+
+    #pause-buttons {
+      margin-top: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+
+    #pause-buttons button {
+      font-size: 22px;
+      padding: 10px 30px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 
 <body>
-
   <div id="score">Pontuação: 0</div>
   <div id="lives">Vidas: 3</div>
+  <div id="pause">
+    PAUSED
+    <div id="pause-buttons">
+      <button id="btn-continue">Resume</button>
+      <button id="btn-restart">Quit</button>
+    </div>
+  </div>
 
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-    
+    let gravityInverted = false;
+    let isFlying = false;
+    let flyStartTime = 0;
+    const FLY_DURATION = 5000; // 5 segundos em ms
+
+    // Parâmetros para ciclo dia-noite
+    const dayNightDuration = 60 * 1000; // 1 minuto em ms
+    let dayNightStart = Date.now();
+
+    const dayColors = {
+      skyTop: new THREE.Color('#ffd6f6'),
+      skyBottom: new THREE.Color('#b8c4ff'),
+      fog: new THREE.Color('#c6b9ff'),
+      sun: new THREE.Color('#FFD700'),
+      ambient: 0.2
+    };
+
+    const nightColors = {
+      skyTop: new THREE.Color('#0a0a2a'),
+      skyBottom: new THREE.Color('#1a1a40'),
+      fog: new THREE.Color('#222244'),
+      sun: new THREE.Color('#444466'),
+      ambient: 0.08
+    };
 
     const textureLoader = new THREE.TextureLoader();
-
     const barkTexture = textureLoader.load('https://threejs.org/examples/textures/tree/bark.jpg');
 
     const scene = new THREE.Scene();
-    // Remover fundo fixo azul
-    // scene.background = new THREE.Color('#c6b9ff');
 
-    // Shader para o céu com degradê
     const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
     const skyMaterial = new THREE.ShaderMaterial({
       uniforms: {
@@ -67,40 +126,52 @@
         bottomColor: { value: new THREE.Color('#b8c4ff') },
       },
       vertexShader: `
-    varying vec3 vWorldPosition;
-    void main() {
-      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPosition.xyz;
-      gl_Position = projectionMatrix * viewMatrix * worldPosition;
-    }
-  `,
+      varying vec3 vWorldPosition;
+      void main() {
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }
+    `,
       fragmentShader: `
-    uniform vec3 topColor;
-    uniform vec3 bottomColor;
-    varying vec3 vWorldPosition;
-    void main() {
-      float height = normalize(vWorldPosition).y;
-      gl_FragColor = vec4(mix(bottomColor, topColor, max(height, 0.0)), 1.0);
-    }
-  `,
+      uniform vec3 topColor;
+      uniform vec3 bottomColor;
+      varying vec3 vWorldPosition;
+      void main() {
+        float height = normalize(vWorldPosition).y;
+        gl_FragColor = vec4(mix(bottomColor, topColor, max(height, 0.0)), 1.0);
+      }
+    `,
       side: THREE.BackSide,
     });
-
-    // Adicionar o céu à cena
     const sky = new THREE.Mesh(skyGeometry, skyMaterial);
     scene.add(sky);
 
     scene.fog = new THREE.Fog('#c6b9ff', 5, 25);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 3, 8);
+    // -------- SISTEMA DE CÂMARAS --------
+    // 0: 1ª pessoa, 1: 3ª pessoa normal, 2: 3ª pessoa afastada
+    const camera1st = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera3rd = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const cameraFar = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    let cameraMode = 1; // começa em 3ª pessoa normal
 
+    // Atualiza o tamanho das câmaras se o ecrã mudar
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.shadowMap.enabled = true;
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    new OrbitControls(camera, renderer.domElement);
+    window.addEventListener('resize', () => {
+      [camera1st, camera3rd, cameraFar].forEach(cam => {
+        cam.aspect = window.innerWidth / window.innerHeight;
+        cam.updateProjectionMatrix();
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --------- CONTROLOS ORBIT (apenas para debug, não afeta câmaras do jogo) ---------
+    // new OrbitControls(camera3rd, renderer.domElement);
 
     class Box extends THREE.Mesh {
       constructor({ width, height, depth, color = '#00ff00', velocity = { x: 0, y: 0, z: 0 }, position = { x: 0, y: 0, z: 0 }, zAcceleration = false }) {
@@ -112,9 +183,9 @@
         this.velocity = velocity;
         this.gravity = -0.005;
         this.zAcceleration = zAcceleration;
-        this.isOnGround = false; // Adiciona a variável para rastrear se está no chão
-        this.castShadow = true; // Permitir que a Box projete sombras
-        this.receiveShadow = true; // Permitir que a Box receba sombras
+        this.isOnGround = false;
+        this.castShadow = true;
+        this.receiveShadow = true;
         this.updateSides();
       }
 
@@ -138,13 +209,25 @@
       applyGravity(ground) {
         this.velocity.y += this.gravity;
         this.position.y += this.velocity.y;
+
         const groundTop = ground.position.y + 0.01;
-        if (this.position.y - this.height / 2 <= groundTop) {
-          this.position.y = groundTop + this.height / 2;
-          this.velocity.y = 0;
-          this.isOnGround = true; // Define como no chão
+        if (!gravityInverted) {
+          if (this.position.y - this.height / 2 <= groundTop) {
+            this.position.y = groundTop + this.height / 2;
+            this.velocity.y = 0;
+            this.isOnGround = true;
+          } else {
+            this.isOnGround = false;
+          }
         } else {
-          this.isOnGround = false; // Define como no ar
+          const ceiling = groundTop + 5;
+          if (this.position.y + this.height / 2 >= ceiling) {
+            this.position.y = ceiling - this.height / 2;
+            this.velocity.y = 0;
+            this.isOnGround = true;
+          } else {
+            this.isOnGround = false;
+          }
         }
       }
     }
@@ -156,6 +239,10 @@
       return x && y && z;
     }
 
+    // Limite lateral da estrada (para não passar para cima das luzes)
+    const LIMITE_ESTRADA = 3;
+
+    // Cubo fica parado em z, cenário move-se para trás
     const cube = new Box({
       width: 1,
       height: 1,
@@ -163,167 +250,217 @@
       velocity: { x: 0, y: -0.01, z: 0 },
       color: '#33cc33'
     });
-    cube.castShadow = true;
+    cube.visible = false;
     scene.add(cube);
 
-    const ground = new THREE.Mesh(
-        new THREE.CircleGeometry(30, 64), // Círculo com raio 30 (diâmetro 60) e 64 segmentos
-        new THREE.MeshStandardMaterial({
-          color: '#30503A', // Cor de relva escura (verde escuro)
-          side: THREE.DoubleSide
-        })
+    // Definições para velocidade baseada na pontuação
+    const SPEED_SCORE_STEP = 30;         // A cada 30 pontos, aumenta a velocidade
+    const BASE_FORWARD_SPEED = 0.045;    // velocidade inicial
+    const MAX_FORWARD_SPEED = 0.18;      // velocidade máxima
+    const SPEED_INCREMENT = 0.012;       // quanto aumenta por cada STEP de score
+
+    let forwardSpeed = BASE_FORWARD_SPEED; // inicializa com a velocidade base
+
+    const runwayLength = 100;
+
+    // Estrada amarela e linha central: várias peças para nunca desaparecerem
+    const numSegments = 4;
+    const carpets = [];
+    const centerLines = [];
+    for (let i = 0; i < numSegments; i++) {
+      const segLength = runwayLength / numSegments;
+      const carpet = new THREE.Mesh(
+        new THREE.BoxGeometry(7.5, 0.1, segLength),
+        new THREE.MeshStandardMaterial({ color: '#DAA520' })
       );
-      ground.rotation.x = -Math.PI / 2; // Rotaciona para ficar plano no eixo XZ
-      ground.position.set(0, -2.5, 0);
-      ground.receiveShadow = true;
-      scene.add(ground);
+      carpet.position.set(0, -2.45, -runwayLength / 2 + i * segLength + segLength / 2);
+      carpet.castShadow = true;
+      scene.add(carpet);
+      carpets.push(carpet);
 
-    // Tapete principal dourado
-    const carpet = new THREE.Mesh(
-      new THREE.BoxGeometry(7.5, 0.1, 50), // Largura de 7.5, altura de 0.1, comprimento de 25
-      new THREE.MeshStandardMaterial({ color: '#DAA520' }) // Cor dourada
-    );
-    carpet.position.set(0, -2.45, 0);
-    carpet.castShadow = true;
-    scene.add(carpet);
-
-    // Linha central mais clara
-    const centerLine = new THREE.Mesh(
-      new THREE.BoxGeometry(6.5, 0.11, 50), // Largura de 6.5, altura de 0.11, comprimento de 25
-      new THREE.MeshStandardMaterial({ color: '#FFD700' }) // Dourado mais claro
-    );
-    centerLine.position.set(0, -2.44, 0); // Ligeiramente acima do tapete
-    centerLine.receiveShadow = true; // Recebe sombras
-    scene.add(centerLine);
-
-    // Luzinhas ao longo das laterais
-    const lightGroup = new THREE.Group();
-    const lightMaterial = new THREE.MeshStandardMaterial({ color: '#ff' }); // Material branco
-
-    for (let i = 0; i < 50; i++) {
-      const zPosition = -12.5 + (i / 49) * 100; // Distribuir as luzes ao longo do comprimento do tapete
-      const lightLeft = new THREE.Mesh(
-        new THREE.SphereGeometry(0.1, 16, 16), // Pequenas esferas para as luzes
-        lightMaterial
+      const centerLine = new THREE.Mesh(
+        new THREE.BoxGeometry(6.5, 0.11, segLength),
+        new THREE.MeshStandardMaterial({ color: '#FFD700' })
       );
-      const lightRight = lightLeft.clone();
-
-      lightLeft.position.set(-3.5, -2.4, zPosition); // Lado esquerdo
-      lightRight.position.set(3.5, -2.4, zPosition); // Lado direito
-
-      lightGroup.add(lightLeft);
-      lightGroup.add(lightRight);
+      centerLine.position.set(0, -2.44, -runwayLength / 2 + i * segLength + segLength / 2);
+      centerLine.receiveShadow = true;
+      scene.add(centerLine);
+      centerLines.push(centerLine);
     }
 
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(30, 64),
+      new THREE.MeshStandardMaterial({
+        color: '#30503A',
+        side: THREE.DoubleSide
+      })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(0, -2.5, 0);
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const lightGroup = new THREE.Group();
+    const lightMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff' });
+    const lateralLights = []; // <-- Guarda as luzes para controlar depois
+
+    for (let i = 0; i < 50; i++) {
+      const zPosition = -runwayLength / 2 + (i / 49) * runwayLength;
+      const lightLeft = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), lightMaterial);
+      const lightRight = lightLeft.clone();
+      lightLeft.position.set(-3.5, -2.4, zPosition);
+      lightRight.position.set(3.5, -2.4, zPosition);
+      lightGroup.add(lightLeft);
+      lightGroup.add(lightRight);
+
+      // Adiciona PointLight em cada esfera
+      const pointLightLeft = new THREE.PointLight(0xffffff, 1.2, 3); // intensidade 0 (apagada de dia)
+      pointLightLeft.position.copy(lightLeft.position);
+      scene.add(pointLightLeft);
+      lateralLights.push(pointLightLeft);
+
+      const pointLightRight = new THREE.PointLight(0xffffff, 1.2, 3);
+      pointLightRight.position.copy(lightRight.position);
+      scene.add(pointLightRight);
+      lateralLights.push(pointLightRight);
+    }
     scene.add(lightGroup);
 
+    // Guardar árvores para mover depois
+    const trees = [];
     function adicionarArvores(qtd = 100) {
-      const raioChao = 25; // Raio do chão (diâmetro 50)
-      const larguraCaminho = 8; // Largura do caminho onde não haverá árvores
-
+      const raioChao = 25;
+      const larguraCaminho = 8;
       for (let i = 0; i < qtd; i++) {
         const troncoAltura = 1 + Math.random() * 0.3;
         const tronco = new THREE.Mesh(
           new THREE.CylinderGeometry(0.08, 0.08, troncoAltura),
           new THREE.MeshStandardMaterial({ map: barkTexture })
         );
-        tronco.castShadow = true; // Tronco projeta sombras
-        tronco.receiveShadow = true; // Tronco recebe sombras
+        tronco.castShadow = true;
+        tronco.receiveShadow = true;
 
         const coneMaterial = new THREE.MeshStandardMaterial({ color: '#228B22' });
         const cones = [];
-
         for (let j = 0; j < 3; j++) {
           const cone = new THREE.Mesh(
             new THREE.ConeGeometry(0.6 - j * 0.15, 0.7, 8),
             coneMaterial
           );
-          cone.castShadow = true; // Cone projeta sombras
-          cone.receiveShadow = true; // Cone recebe sombras
+          cone.castShadow = true;
+          cone.receiveShadow = true;
           cones.push(cone);
         }
 
         let x, z;
         do {
-          // Gerar posição aleatória dentro do raio do chão
           const angulo = Math.random() * Math.PI * 2;
           const distancia = Math.random() * raioChao;
           x = Math.cos(angulo) * distancia;
           z = Math.sin(angulo) * distancia;
-        } while (
-          z > 4 || // Garantir que as árvores estejam apenas na frente do cubo
-          (x > -larguraCaminho / 2 && x < larguraCaminho / 2) // Evitar o caminho
-        );
+        } while (z > 4 || (x > -larguraCaminho / 2 && x < larguraCaminho / 2));
 
-        const y = -2.5; // Ajustar para que as árvores fiquem no chão
+        // Distribuir árvores ao longo da pista
+        z = -runwayLength / 2 + Math.random() * runwayLength;
+
+        const y = -2.5;
         const topoTroncoY = y + troncoAltura / 2;
         tronco.position.set(x, topoTroncoY, z);
         scene.add(tronco);
-
+        trees.push(tronco);
         cones.forEach((cone, idx) => {
           const heightSoFar = topoTroncoY + 0.6 + idx * 0.5;
           cone.position.set(x, heightSoFar, z);
           scene.add(cone);
+          trees.push(cone);
         });
       }
     }
 
     adicionarArvores();
 
+    // Carrega as texturas do sol e da lua
+    const sunTexture = textureLoader.load('assets/textures/sun.png');
+    const moonTexture = textureLoader.load('assets/textures/moon.png');
+
+    // Cria o mesh do sol (que também será a lua)
     const sun = new THREE.Mesh(
       new THREE.SphereGeometry(2, 32, 32),
-      new THREE.MeshBasicMaterial({ color: '#FFD700' }) // Cor dourada para o sol
+      new THREE.MeshBasicMaterial({ map: sunTexture })
     );
-    sun.position.set(10, 5, -10); // Posição do sol no céu
+    sun.position.set(10, 5, -10);
     sun.castShadow = true;
     scene.add(sun);
+    sun.material.map = sunTexture;
+    sun.material.needsUpdate = true;
 
-    const ambientLight = new THREE.AmbientLight('#ffffff', 0.2); // Cor branca com intensidade 0.5
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45); // Mais luz ambiente
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight('#FFD700', 1.5); // Luz dourada
-    sunLight.position.set(10, 20, -10); // Mesma posição do sol
-    sunLight.castShadow = true; // Permitir sombras
-    sunLight.shadow.mapSize.width = 1024; // Resolução das sombras
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.55); // Menos intensidade e cor neutra
+    sunLight.position.set(10, 20, -10);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 1024;
     sunLight.shadow.mapSize.height = 1024;
     sunLight.shadow.camera.near = 0.5;
     sunLight.shadow.camera.far = 50;
     scene.add(sunLight);
 
-    ground.receiveShadow = true;
-
-    // Cubo (projeta sombras)
-    cube.castShadow = true;
-
-    // Tapete (recebe sombras)
-    carpet.receiveShadow = true;
-
     const fireflies = new THREE.Group();
     const fireflyTexture = new THREE.SpriteMaterial({ color: '#ccffcc' });
-
     for (let i = 0; i < 60; i++) {
       const sprite = new THREE.Sprite(fireflyTexture.clone());
       sprite.scale.set(0.2, 0.2, 0.2);
-      sprite.position.set(
-        (Math.random() - 0.5) * 40,
-        0.5 + Math.random() * 4,
-        -Math.random() * 20
-      );
+      sprite.position.set((Math.random() - 0.5) * 40, 0.5 + Math.random() * 4, -Math.random() * 20);
       fireflies.add(sprite);
     }
     scene.add(fireflies);
 
-    const keys = { a: false, d: false, ArrowLeft: false, ArrowRight: false };
+    const keys = { a: false, d: false, arrowleft: false, arrowright: false };
+
+    let paused = false;
+
+    // Botões de pausa
+    const pauseDiv = document.getElementById('pause');
+    const btnContinue = document.getElementById('btn-continue');
+    const btnRestart = document.getElementById('btn-restart');
+
+    btnContinue.addEventListener('click', () => {
+      paused = false;
+      pauseDiv.style.display = 'none';
+      animate();
+    });
+
+    btnRestart.addEventListener('click', () => {
+      window.location.reload();
+    });
 
     window.addEventListener('keydown', e => {
+      // PAUSE/UNPAUSE com ESC
+      if (e.code === 'Escape' && !e.repeat) {
+        paused = !paused;
+        pauseDiv.style.display = paused ? 'block' : 'none';
+        if (!paused) animate(); // retoma animação se despausar
+        return;
+      }
+
+      if (paused) return; // não processa outros controlos se pausado
+
       keys[e.key.toLowerCase()] = true;
-      if (e.code === 'Space' && cube.isOnGround) { // Permite saltar apenas se estiver no chão
-        cube.velocity.y = 0.12;
-        cube.isOnGround = false; // Define como no ar após o salto
+
+      if (e.code === 'Space' && cube.isOnGround) {
+        cube.velocity.y = gravityInverted ? -0.12 : 0.12;
+        cube.isOnGround = false;
+      }
+
+      // Troca de câmara com Ctrl (não repete se mantiver pressionado)
+      if (e.ctrlKey && !e.repeat) {
+        cameraMode = (cameraMode + 1) % 3;
       }
     });
 
     window.addEventListener('keyup', e => {
+      if (paused) return;
       keys[e.key.toLowerCase()] = false;
     });
 
@@ -333,11 +470,6 @@
     let score = 0;
     let lives = 3;
 
-    enemies.forEach(enemy => {
-      enemy.castShadow = true;
-      enemy.receiveShadow = true;
-    });
-
     function updateScore() {
       document.getElementById('score').innerText = `Pontuação: ${score}`;
     }
@@ -346,13 +478,353 @@
       document.getElementById('lives').innerText = `Vidas: ${lives}`;
     }
 
+    // --- PLAYER MODEL LOADING ---
+    let playerModel = null;
+    let mixer = null;
+    let swimAction = null;
+    let idleAction = null;  // Nova variável para a animação idle/padrão
+
+    const playerLoader = new GLTFLoader();
+    playerLoader.load(
+      'assets/models/flora_sirenix.glb', // Caminho para o modelo
+      gltf => {
+        playerModel = gltf.scene;
+        playerModel.scale.set(0.5, 0.5, 0.5); // Ajusta a escala do modelo
+        playerModel.position.set(0, -2.3, 0); // Ajusta a posição inicial para que fique no chão
+        playerModel.rotation.y = Math.PI / 2; // Roda 90 graus no eixo Y
+        playerModel.castShadow = true;
+        playerModel.receiveShadow = true;
+        scene.add(playerModel);
+
+        // Configurar o mixer de animações
+        mixer = new THREE.AnimationMixer(playerModel);
+
+        // Verificar as animações disponíveis
+        if (gltf.animations && gltf.animations.length > 0) {
+          console.log("Animações disponíveis:", gltf.animations.map(a => a.name));
+
+          // Procurar pela animação "idle" (padrão) e "swim"
+          const idleClip = gltf.animations.find(anim =>
+            anim.name.toLowerCase().includes("idle")
+          );
+
+          const swimClip = gltf.animations.find(anim =>
+            anim.name.toLowerCase().includes("swim")
+          );
+
+          if (idleClip) {
+            idleAction = mixer.clipAction(idleClip);
+            idleAction.play(); // Inicia com a animação padrão
+            console.log("Animação idle ativada");
+          }
+
+          if (swimClip) {
+            swimAction = mixer.clipAction(swimClip);
+            // Não inicia a animação swim agora
+          } else if (idleClip) {
+            // Se não encontrar swim, duplica idle para usar como swim
+            swimAction = mixer.clipAction(idleClip);
+          }
+        }
+      },
+      undefined,
+      err => {
+        console.error('Erro ao carregar o modelo do player:', err);
+      }
+    );
+
+    // --- COIN MODEL LOADING ---
+    let coinGLTF = null;
+    const coinLoader = new GLTFLoader();
+    coinLoader.load(
+      'assets/models/stylized_coin.glb', // Agora o modelo está em assets/models/
+      gltf => { coinGLTF = gltf.scene; },
+      undefined,
+      err => { console.error('Erro ao carregar a moeda:', err); }
+    );
+
+    // --- WING MODEL LOADING ---
+    let wingGLTF = null;
+    const wingLoader = new GLTFLoader();
+    wingLoader.load(
+      'assets/models/wings.glb',
+      gltf => { wingGLTF = gltf.scene; },
+      undefined,
+      err => { console.error('Erro ao carregar a asa:', err); }
+    );
+
+    // --- BOMB MODEL LOADING ---
+    let bombGLTF = null;
+    const bombLoader = new GLTFLoader();
+    bombLoader.load(
+      'assets/models/bomb.glb', // Caminho para o modelo da bomba
+      gltf => { bombGLTF = gltf.scene; },
+      undefined,
+      err => { console.error('Erro ao carregar o modelo da bomba:', err); }
+    );
+
+    // Função para criar uma bomba
+    function spawnBomb(x, y, z) {
+      if (bombGLTF) {
+        const bomb = bombGLTF.clone(true);
+        bomb.position.set(x, -2.1, z);
+        bomb.scale.set(0.15, 0.15, 0.15); // Ajusta a escala da bomba
+
+        bomb.castShadow = true;
+        bomb.userData = { type: 'bomb' };
+        scene.add(bomb);
+        enemies.push(bomb);
+        return bomb;
+      } else {
+        console.error('Modelo da bomba ainda não carregado.');
+      }
+    }
+
+    // --- MUSHROOM HOUSE MODEL LOADING ---
+    let mushroomHouseGLTF = null;
+    const mushroomHouseLoader = new GLTFLoader();
+    mushroomHouseLoader.load(
+      'assets/models/mushroom_house.glb', // Caminho para o modelo
+      gltf => {
+        mushroomHouseGLTF = gltf.scene;
+        // Adicionar casas de cogumelo ao cenário
+        addMushroomHouses();
+      },
+      undefined,
+      err => { console.error('Erro ao carregar a casa de cogumelo:', err); }
+    );
+
+    // Array para armazenar as casas de cogumelo
+    const mushroomHouses = [];
+
+    // Função para adicionar casas de cogumelo no cenário
+    function addMushroomHouses() {
+      if (!mushroomHouseGLTF) return;
+
+      // Avalia múltiplas posições potenciais e aplica chance baixa de spawn
+      const possiblePositions = 10;  // Número de posições potenciais avaliadas
+      const spawnChance = 0.15;     // Apenas 15% de chance de aparecer uma casa em cada posição
+
+      for (let i = 0; i < possiblePositions; i++) {
+        // Aplica chance de spawn
+        if (Math.random() > spawnChance) continue;
+
+        const house = mushroomHouseGLTF.clone();
+
+        // Mantém a escala de 30 como solicitado
+        house.scale.set(30, 30, 30);
+
+        // Aleatório se está à esquerda (70%) ou direita (30%) - tornando assimétrico
+        const isLeftSide = Math.random() < 0.7;
+
+        // Posição X com variação
+        let x;
+        if (isLeftSide) {
+          // Lado esquerdo com variação
+          x = -7 - Math.random() * 13; // Entre -7 e -15
+        } else {
+          // Lado direito com variação
+          x = 7 + Math.random() * 13;  // Entre 7 e 15
+        }
+
+        // Posições Z aleatórias ao longo do caminho
+        // Usa posições mais variadas, não apenas 4 grupos fixos
+        const z = -25 - Math.random() * 10; // Entre -25 e -35
+
+        house.position.set(
+          x,
+          -2.5, // Altura fixa no chão 
+          z
+        );
+
+        // Rotação com maior aleatoriedade
+        // Base: viradas para estrada, mas com mais variação
+        const baseAngle = isLeftSide ? Math.PI / 4 : -Math.PI / 4;
+        // Variação de ±30 graus
+        const randomAngle = (Math.random() - 0.5) * Math.PI / 3;
+        house.rotation.y = baseAngle + randomAngle;
+
+        house.castShadow = true;
+        house.receiveShadow = true;
+
+        scene.add(house);
+        mushroomHouses.push(house);
+      }
+    }
+
+    let flyingCoinsGenerated = false;
+    let flyingCoins = [];
+
+    // Função para verificar se já existe uma moeda ou asa perto da posição (x, z)
+    function isOccupied(x, z, type) {
+      // type: 'coin' ou 'flyPower'
+      return enemies.some(obj => {
+        if (!obj.userData || obj.userData.type === type) return false;
+        // Só compara com o outro tipo
+        const dx = obj.position.x - x;
+        const dz = obj.position.z - z;
+        return Math.sqrt(dx * dx + dz * dz) < 1.5; // distância mínima
+      });
+    }
+
+    function spawnPowerUp(x, y, z) {
+      // Não cria se já houver moeda perto
+      if (isOccupied(x, z, 'flyPower')) return;
+
+      if (wingGLTF) {
+        const wing = wingGLTF.clone(true);
+        wing.scale.set(0.25, 0.25, 0.25);
+        wing.position.set(x, -1.5, z);
+
+        // Altera a cor de todos os meshes para #ffccff
+        wing.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (!child.material) {
+              child.material = new THREE.MeshStandardMaterial({ color: 0xffccff });
+            } else {
+              child.material.color.set('#ffccff');
+            }
+            child.material.transparent = false;
+            child.material.opacity = 1;
+          }
+        });
+
+        wing.userData = { type: 'flyPower' };
+        scene.add(wing);
+        enemies.push(wing);
+        console.log('Asa adicionada em', x, y, z);
+      } else {
+        const powerUp = new Box({
+          width: 1.2,
+          height: 1.2,
+          depth: 1.2,
+          position: { x, y, z },
+          color: '#00e6ff',
+          zAcceleration: true
+        });
+        powerUp.userData = { type: 'flyPower' };
+        powerUp.castShadow = true;
+        scene.add(powerUp);
+        enemies.push(powerUp);
+      }
+    }
+
+
+    // --- Ao criar moedas, não cria se já houver asa perto ---
+    function spawnCoin(x, y, z) {
+      // Não cria se já houver asa perto
+      if (isOccupied(x, z, 'coin')) return;
+
+      if (coinGLTF) {
+        const coin = coinGLTF.clone(true);
+        coin.position.set(x, y, z);
+        coin.scale.set(1.2, 1.2, 1.2);
+        coin.userData = { type: 'coin' };
+        scene.add(coin);
+        enemies.push(coin);
+        return coin;
+      } else {
+        const enemyCoin = new Box({
+          width: 1,
+          height: 1,
+          depth: 1,
+          position: { x, y, z },
+          color: '#FFD700',
+          zAcceleration: true
+        });
+        enemyCoin.castShadow = true;
+        enemyCoin.userData = { type: 'coin' };
+        scene.add(enemyCoin);
+        enemies.push(enemyCoin);
+        return enemyCoin;
+      }
+    }
+
+    let lastCoinSpawnZ = -10;
     function animate() {
+      if (paused) return;
+
+      // Desativa voo automaticamente após 5 segundos
+      if (isFlying && Date.now() - flyStartTime > FLY_DURATION) {
+        gravityInverted = !gravityInverted;
+        cube.gravity *= -1;
+        cube.velocity.y = gravityInverted ? 0.12 : -0.12;
+        cube.rotation.z = gravityInverted ? Math.PI : 0;
+        isFlying = false;
+      }
+
+      mushroomHouses.forEach(house => {
+        house.position.z += forwardSpeed;
+        if (house.position.z > runwayLength / 2) {
+          house.position.z -= runwayLength;
+          // Randomiza um pouco a posição X e rotação Y quando recicla
+          const side = house.position.x < 0 ? -1 : 1;
+          house.position.x = side * (5 + Math.random() * 2);
+          house.rotation.y = Math.random() * Math.PI * 2;
+        }
+      });
+
       requestAnimationFrame(animate);
-      renderer.render(scene, camera);
+
+      // Calcula a velocidade baseada na pontuação
+      let speedLevel = Math.floor(score / SPEED_SCORE_STEP);
+      forwardSpeed = BASE_FORWARD_SPEED + speedLevel * SPEED_INCREMENT;
+      if (forwardSpeed > MAX_FORWARD_SPEED) forwardSpeed = MAX_FORWARD_SPEED;
+
+      // --- Ciclo dia-noite ---
+      const now = Date.now();
+      const t = ((now - dayNightStart) % dayNightDuration) / dayNightDuration;
+      const phase = t < 0.5 ? t * 2 : (1 - t) * 2; // 0 a 1 a 0
+
+      // Troca a textura do sol/lua conforme o ciclo
+      if (phase < 0.5) {
+        // Dia: mostra o sol
+        if (sun.material.map !== sunTexture) {
+          sun.material.map = sunTexture;
+          sun.material.needsUpdate = true;
+        }
+      } else {
+        // Noite: mostra a lua
+        if (sun.material.map !== moonTexture) {
+          sun.material.map = moonTexture;
+          sun.material.needsUpdate = true;
+        }
+      }
+
+      if (playerModel) {
+        playerModel.position.copy(cube.position); // Sincroniza a posição da fada com o cubo
+        playerModel.rotation.copy(cube.rotation); // Sincroniza a rotação do cubo com o modelo
+        playerModel.rotation.z = gravityInverted ? Math.PI : 0; // Corrige a rotação ao apanhar o power-up
+        if (isFlying) {
+          playerModel.position.y += 2.1; // Ajusta a altura em 1 unidade para cima durante o voo
+        } else if (cube.isOnGround) {
+          playerModel.position.y = -2.7; // Posição normal quando não está voando
+        }
+        if (mixer) {
+          mixer.update(0.016); // Atualiza cerca de 60fps
+        }
+      }
+
+      skyMaterial.uniforms.topColor.value.lerpColors(dayColors.skyTop, nightColors.skyTop, phase);
+      skyMaterial.uniforms.bottomColor.value.lerpColors(dayColors.skyBottom, nightColors.skyBottom, phase);
+      scene.fog.color.lerpColors(dayColors.fog, nightColors.fog, phase);
+      sun.material.color.lerpColors(dayColors.sun, nightColors.sun, phase);
+      ambientLight.intensity = dayColors.ambient * (1 - phase) + nightColors.ambient * phase;
+      sunLight.intensity = 1.5 * (1 - phase) + 0.3 * phase;
+
+      // Luzes dos limites laterais acendem à noite
+      lateralLights.forEach(light => {
+        light.intensity = 1.2 * phase;
+      });
+      // -----------------------
 
       fireflies.children.forEach((f, i) => {
         f.position.y += Math.sin(Date.now() * 0.002 + i) * 0.003;
         f.material.opacity = 0.5 + 0.5 * Math.sin(Date.now() * 0.005 + i);
+        f.position.z += forwardSpeed;
+        if (f.position.z > runwayLength / 2) f.position.z -= runwayLength;
       });
 
       cube.velocity.x = 0;
@@ -360,53 +832,292 @@
       if (keys.d || keys.arrowright) cube.velocity.x = 0.08;
       cube.update(ground);
 
-      camera.position.x = cube.position.x;
-      camera.position.z = cube.position.z + 3.5;
-      camera.position.y = cube.position.y + 2;
-      camera.lookAt(cube.position.x, cube.position.y + 1, cube.position.z);
+      // Mantém o cubo sempre na mesma posição z
+      cube.position.z = 0;
 
+      // Move e recicla todas as peças da estrada
+      carpets.forEach(carpet => {
+        carpet.position.z += forwardSpeed;
+        if (carpet.position.z > runwayLength / 2)
+          carpet.position.z -= runwayLength;
+      });
+
+      centerLines.forEach(centerLine => {
+        centerLine.position.z += forwardSpeed;
+        if (centerLine.position.z > runwayLength / 2)
+          centerLine.position.z -= runwayLength;
+      });
+
+      lightGroup.children.forEach(light => {
+        light.position.z += forwardSpeed;
+        if (light.position.z > runwayLength / 2) light.position.z -= runwayLength;
+      });
+
+      trees.forEach(tree => {
+        tree.position.z += forwardSpeed;
+        if (tree.position.z > runwayLength / 2)
+          tree.position.z -= runwayLength;
+      });
+
+      // --- Atualização dos inimigos e moedas ---
       enemies.forEach((enemy, i) => {
-        enemy.update(ground);
-        if (boxCollision({ box1: cube, box2: enemy })) {
-          if (enemy.material.color.equals(new THREE.Color('red'))) {
+        if (enemy.userData && enemy.userData.type === 'coin') {
+          enemy.position.z += forwardSpeed;
+          // Colisão simples
+          const coinBox = new THREE.Box3().setFromObject(enemy);
+          const playerBox = new THREE.Box3().setFromCenterAndSize(
+            cube.position,
+            new THREE.Vector3(cube.width, cube.height, cube.depth)
+          );
+          if (coinBox.intersectsBox(playerBox)) {
+            score += 5;
+            updateScore();
+            scene.remove(enemy);
+            enemies.splice(i, 1);
+          }
+          // Efeito de rotação
+          enemy.rotation.y += 0.15;
+        } else if (enemy.userData && enemy.userData.type === 'flyPower') {
+          enemy.position.z += forwardSpeed;
+          // Colisão com o cubo verde ativa o voo
+          const powerBox = new THREE.Box3().setFromObject(enemy);
+          const playerBox = new THREE.Box3().setFromCenterAndSize(
+            cube.position,
+            new THREE.Vector3(cube.width, cube.height, cube.depth)
+          );
+          // No trecho onde o jogador coleta o power up, por volta da linha 954
+          if (powerBox.intersectsBox(playerBox) && !isFlying) {
+            gravityInverted = !gravityInverted;
+            cube.gravity *= -1;
+            cube.velocity.y = gravityInverted ? 0.12 : -0.12;
+            isFlying = true;
+            flyStartTime = Date.now();
+            flyingCoinsGenerated = false; // Permite gerar moedas voadoras no próximo voo
+
+            // Ativa a animação de natação
+            if (mixer && swimAction && idleAction) {
+              idleAction.fadeOut(0.5); // Fade-out da animação padrão
+              swimAction.reset().fadeIn(0.5).play(); // Inicia a animação de natação com fade-in
+            }
+
+            // desativar animação de natação após 5 segundos
+            setTimeout(() => {
+              if (mixer && swimAction) {
+                swimAction.fadeOut(0.5); // Fade-out da animação de natação
+                idleAction.reset().fadeIn(0.5).play(); // Volta para a animação padrão
+              }
+            }, 5000);
+
+            scene.remove(enemy);
+            enemies.splice(i, 1);
+          }
+          // Opcional: animação do power up (ex: rodar)
+          enemy.rotation.y += 0.05;
+        } else if (enemy.userData && enemy.userData.type === 'bomb') {
+          // Movimento da bomba (mais lento que as moedas)
+          enemy.position.z += forwardSpeed;
+
+          // Adiciona rotação para a bomba (opcional)
+          enemy.rotation.y += 0.03;
+
+          // Verifica colisão com o jogador
+          const bombBox = new THREE.Box3().setFromObject(enemy);
+          const playerBox = new THREE.Box3().setFromCenterAndSize(
+            cube.position,
+            new THREE.Vector3(cube.width, cube.height, cube.depth)
+          );
+
+          if (bombBox.intersectsBox(playerBox)) {
             lives--;
             updateLives();
             if (lives <= 0) {
               alert(`Game Over! Pontuação final: ${score}`);
               window.location.reload();
             }
-          } else if (enemy.material.color.equals(new THREE.Color('pink'))) {
-            score += 5;
-            updateScore();
+            scene.remove(enemy);
+            enemies.splice(i, 1);
           }
-          scene.remove(enemy);
-          enemies.splice(i, 1);
+        } else if (enemy instanceof Box) {
+          // Reduz a velocidade dos cubos vermelhos para metade
+          if (enemy.material.color.equals(new THREE.Color('red'))) {
+            enemy.position.z += forwardSpeed * 0.125;
+          } else {
+            enemy.position.z += forwardSpeed;
+          }
+          enemy.update(ground);
+          if (boxCollision({ box1: cube, box2: enemy })) {
+            if (enemy.material.color.equals(new THREE.Color('red'))) {
+              lives--;
+              updateLives();
+              if (lives <= 0) {
+                alert(`Game Over! Pontuação final: ${score}`);
+                window.location.reload();
+              }
+            }
+            scene.remove(enemy);
+            enemies.splice(i, 1);
+          }
         }
       });
+
+      // Substitua o bloco do sistema de câmeras com este:
+      // --------- SISTEMA DE CÂMARAS ---------
+      // 1ª pessoa
+      camera1st.position.set(
+        cube.position.x,
+        cube.position.y + 0.4,
+        cube.position.z + 0.2
+      );
+      camera1st.rotation.set(0, 0, 0); // Reset de rotação
+      camera1st.lookAt(
+        cube.position.x,
+        cube.position.y + 0.4,
+        cube.position.z - 1
+      );
+
+      // 3ª pessoa normal
+      camera3rd.position.set(
+        cube.position.x,
+        cube.position.y + 2,
+        cube.position.z + 3.5
+      );
+      camera3rd.rotation.set(0, 0, 0); // Reset de rotação
+      camera3rd.lookAt(cube.position.x, cube.position.y + 0.5, cube.position.z);
+
+      // 3ª pessoa afastada
+      cameraFar.position.set(
+        cube.position.x,
+        cube.position.y + 5,
+        cube.position.z + 8
+      );
+      cameraFar.rotation.set(0, 0, 0); // Reset de rotação
+      cameraFar.lookAt(cube.position.x, cube.position.y + 0.5, cube.position.z);
+
+      // Renderiza com a câmara ativa
+      let activeCamera;
+      if (cameraMode === 0) activeCamera = camera1st;
+      else if (cameraMode === 1) activeCamera = camera3rd;
+      else activeCamera = cameraFar;
+
+      renderer.render(scene, activeCamera);
 
       spawnTimer++;
       if (spawnTimer >= spawnCooldown) {
         spawnTimer = 0;
         if (spawnCooldown > 10) spawnCooldown -= 1;
         const isRed = Math.random() < 0.5;
-        const enemy = new Box({
-          width: 1,
-          height: 1,
-          depth: 1,
-          position: { x: (Math.random() - 0.5) * 8, y: 0, z: -30 },
-          color: isRed ? 'red' : 'pink',
-          zAcceleration: true
-        });
-        enemy.castShadow = true;
-        scene.add(enemy);
-        enemies.push(enemy);
+        const isPowerUp = Math.random() < 1; // 1% de chance de aparecer um power up
+        const lateralLimit = LIMITE_ESTRADA - cube.width / 2;
+        const xPos = (Math.random() - 0.5) * (lateralLimit * 2);
+
+        if (isRed) {
+          // Substitui o cubo vermelho por uma bomba
+          spawnBomb(xPos, 0, -30);
+
+          // Moeda ao lado da bomba, sempre no chão
+          const yCoin = -2.3;
+          const offset = 1.2;
+          let coinX = xPos + (Math.random() < 0.5 ? -offset : offset);
+          if (coinX < -lateralLimit) coinX = -lateralLimit;
+          if (coinX > lateralLimit) coinX = lateralLimit;
+          spawnCoin(coinX, yCoin, -30);
+
+          // Power up ao lado da bomba
+          if (isPowerUp) {
+            const yPower = -2.3;
+            const offset = 2.2;
+            let powerX = xPos + (Math.random() < 0.5 ? -offset : offset);
+            if (powerX < -lateralLimit) powerX = -lateralLimit;
+            if (powerX > lateralLimit) powerX = lateralLimit;
+            spawnPowerUp(powerX, yPower, -30);
+          }
+        } else {
+          // Moeda sozinha, sempre no chão
+          const yCoin = -2.3;
+          const coinX = (Math.random() - 0.5) * (lateralLimit * 2);
+          spawnCoin(coinX, yCoin, -30);
+
+          // Power up sozinho
+          if (isPowerUp) {
+            const yPower = -2.3;
+            const powerX = (Math.random() - 0.5) * (lateralLimit * 2);
+            spawnPowerUp(powerX, yPower, -30);
+          }
+        }
       }
 
-      const limite = 8 / 2 - cube.width / 2;
+      // Limita o cubo verde à estrada
+      const limite = LIMITE_ESTRADA - cube.width / 2;
       if (cube.position.x < -limite) cube.position.x = -limite;
       if (cube.position.x > limite) cube.position.x = limite;
-    }
 
+      // Gera moedas voadoras apenas uma vez por voo, 1 segundo após início
+      if (isFlying && !flyingCoinsGenerated && Date.now() - flyStartTime > 1000) {
+        flyingCoinsGenerated = true;
+        flyingCoins = [];
+
+        // Parâmetros de tempo
+        const delay = 1000; // ms (1 segundo após início)
+        const endBuffer = 500; // ms (meio segundo antes do fim)
+        const availableTime = FLY_DURATION - delay - endBuffer; // tempo útil para apanhar moedas
+
+        // Calcula o número de moedas proporcional à velocidade (mínimo 10, máximo 20)
+        // Quanto mais rápido, mais moedas
+        let coinsToGenerate = Math.round(
+          10 + 10 * ((forwardSpeed - BASE_FORWARD_SPEED) / (MAX_FORWARD_SPEED - BASE_FORWARD_SPEED))
+        );
+        coinsToGenerate = Math.max(10, Math.min(20, coinsToGenerate));
+
+        // Distância total do spawn das moedas
+        const startZ = -30 + forwardSpeed * 60 * (delay / 1000);
+        const endZ = -30 + forwardSpeed * 60 * ((delay + availableTime) / 1000);
+        const totalDistance = endZ - startZ;
+
+        // Espaçamento entre moedas
+        const distanceBetweenCoins = totalDistance / (coinsToGenerate - 1);
+
+        for (let i = 0; i < coinsToGenerate; i++) {
+          const coinZ = startZ + i * distanceBetweenCoins;
+          if (coinZ > endZ) break;
+
+          // X aleatório dentro do limite lateral
+          const coinX = (Math.random() - 0.5) * (LIMITE_ESTRADA - cube.width / 2) * 2;
+          // Altura fixa: igual à do cubo verde durante o voo
+          const coinY = cube.position.y;
+
+          spawnCoin(coinX, coinY, coinZ);
+          // Se quiseres garantir que não há sobreposição com asas, a função spawnCoin já faz isso
+          // flyingCoins.push(coin); // Se quiseres guardar referência
+        }
+      }
+
+      // Quando o voo termina, limpe o estado:
+      if (!isFlying) {
+        flyingCoinsGenerated = false;
+        flyingCoins = [];
+      }
+      // Movimento do sol e da lua no horizonte
+      const sunHeight = 15; // Altura máxima no céu
+      const sunRadius = 15; // Raio da trajetória no horizonte
+
+      if (phase < 0.5) {
+        // Dia: movimento do sol
+        const angle = Math.PI * phase; // Ângulo do sol (0 a π)
+        sun.position.set(
+          Math.cos(angle) * sunRadius, // Movimento horizontal
+          Math.sin(angle) * sunHeight, // Movimento vertical
+          -10 // Mantém a posição Z
+        );
+      } else {
+        // Noite: movimento da lua
+        const angle = Math.PI * (phase - 0.5); // Ângulo da lua (0 a π)
+        sun.position.set(
+          Math.cos(angle) * sunRadius, // Movimento horizontal
+          Math.sin(angle) * sunHeight, // Movimento vertical
+          -10 // Mantém a posição Z
+        );
+      }
+    }
     animate();
   </script>
 </body>
