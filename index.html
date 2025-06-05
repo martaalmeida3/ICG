@@ -233,10 +233,80 @@
       background: #666;
       transform: scale(1.05);
     }
+
+    /* Mobile controls */
+    #mobile-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      width: 100%;
+      display: none;
+      /* Initially hidden, will show on mobile */
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+    }
+
+    .control-button {
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 105, 180, 0.7);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    #btn-jump {
+      width: 80px;
+      height: 80px;
+      font-size: 18px;
+    }
+
+    #btn-camera {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      font-size: 20px;
+    }
+
+    .control-button:active {
+      transform: scale(0.9);
+      background: rgba(255, 105, 180, 0.9);
+    }
+
+    @media (max-width: 768px) {
+      #mobile-controls {
+        display: flex;
+      }
+
+      /* Push score and lives indicators up on mobile */
+      #score,
+      #lives {
+        top: 20px;
+      }
+    }
   </style>
 </head>
 
 <body>
+  <!-- Mobile controls - add before closing body tag -->
+  <div id="mobile-controls" style="display: none;">
+    <div class="control-button" id="btn-left">←</div>
+    <div class="control-button" id="btn-jump">Jump</div>
+    <div class="control-button" id="btn-right">→</div>
+    <div class="control-button" id="btn-camera">🎥</div>
+  </div>
+
   <!-- Add the menu overlay -->
   <div id="menu-container">
     <h1 id="game-title" class="glow" style="margin-bottom: 20%;">Starlit Runway</h1>
@@ -1449,6 +1519,54 @@
     });
 
     let lastCoinSpawnZ = -10;
+
+    // Add this just before the animate function call (around line 2365)
+
+    // Check if device is mobile
+    function isMobileDevice() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        (window.innerWidth <= 768);
+    }
+
+    // Setup mobile controls
+    function setupMobileControls() {
+      const mobileControls = document.getElementById('mobile-controls');
+
+      if (isMobileDevice()) {
+        mobileControls.style.display = 'flex';
+
+        // Left button
+        const btnLeft = document.getElementById('btn-left');
+        btnLeft.addEventListener('touchstart', () => { keys.a = true; keys.arrowleft = true; });
+        btnLeft.addEventListener('touchend', () => { keys.a = false; keys.arrowleft = false; });
+
+        // Right button
+        const btnRight = document.getElementById('btn-right');
+        btnRight.addEventListener('touchstart', () => { keys.d = true; keys.arrowright = true; });
+        btnRight.addEventListener('touchend', () => { keys.d = false; keys.arrowright = false; });
+
+        // Jump button
+        const btnJump = document.getElementById('btn-jump');
+        btnJump.addEventListener('touchstart', () => {
+          if (cube.isOnGround) {
+            cube.velocity.y = gravityInverted ? -0.12 : 0.12;
+            cube.isOnGround = false;
+          }
+        });
+
+        // Camera button
+        const btnCamera = document.getElementById('btn-camera');
+        btnCamera.addEventListener('touchstart', () => {
+          cameraMode = (cameraMode + 1) % 3;
+        });
+      }
+    }
+
+    // Initialize mobile controls when game starts
+    document.addEventListener('DOMContentLoaded', () => {
+      setupMobileControls();
+    });
+
     function animate() {
       if (paused || !gameStarted) return;
 
