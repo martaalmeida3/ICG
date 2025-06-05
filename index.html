@@ -20,6 +20,7 @@
       margin: 0;
       overflow: hidden;
       background: #87CEEB;
+      font-family: 'Arial', sans-serif;
     }
 
     #score,
@@ -29,6 +30,8 @@
       font-size: 20px;
       color: white;
       text-shadow: 1px 1px 2px black;
+      display: none;
+      /* Hide initially */
     }
 
     #score {
@@ -70,12 +73,192 @@
       border: none;
       cursor: pointer;
     }
+
+    /* Start Menu Styles */
+    #menu-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 100;
+      width: 80%;
+      max-width: 800px;
+    }
+
+    #game-title {
+      font-size: 48px;
+      color: white;
+      text-shadow: 0 0 10px #ff69b4, 0 0 20px #ff69b4, 0 0 30px #ff69b4;
+      margin-bottom: 30px;
+      letter-spacing: 3px;
+    }
+
+    #instructions {
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      text-align: left;
+      box-shadow: 0 0 15px rgba(255, 105, 180, 0.7);
+    }
+
+    #instructions h2 {
+      color: #ff69b4;
+      text-align: center;
+      margin-top: 0;
+    }
+
+    #instructions ul {
+      list-style-type: none;
+      padding-left: 10px;
+    }
+
+    #instructions li {
+      margin-bottom: 10px;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    #instructions li:before {
+      content: "✨";
+      position: absolute;
+      left: 0;
+      color: #ff69b4;
+    }
+
+    .control-key {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin: 0 3px;
+      font-family: monospace;
+    }
+
+    #start-button {
+      background: linear-gradient(135deg, #ff69b4, #9370db);
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      font-size: 24px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 105, 180, 0.7);
+      transition: all 0.3s ease;
+    }
+
+    #start-button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 25px rgba(255, 105, 180, 0.9);
+    }
+
+    .glow {
+      animation: glow 2s infinite alternate;
+    }
+
+    @keyframes glow {
+      from {
+        text-shadow: 0 0 10px #ff69b4, 0 0 20px #ff69b4;
+      }
+
+      to {
+        text-shadow: 0 0 20px #ff69b4, 0 0 30px #ff69b4, 0 0 40px #ff69b4;
+      }
+    }
+
+    #gameover {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      z-index: 100;
+      box-shadow: 0 0 30px rgba(255, 105, 180, 0.9);
+      border: 2px solid #ff69b4;
+      min-width: 300px;
+    }
+
+    #gameover h1 {
+      font-size: 48px;
+      margin-top: 0;
+      color: #ff69b4;
+      text-shadow: 0 0 10px #ff69b4;
+    }
+
+    #final-score {
+      font-size: 28px;
+      margin: 20px 0;
+    }
+
+    #gameover-buttons {
+      margin-top: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+
+    #gameover-buttons button {
+      font-size: 22px;
+      padding: 10px 30px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      width: 200px;
+      transition: all 0.3s ease;
+    }
+
+    #btn-restart-gameover {
+      background: #ff69b4;
+      color: white;
+    }
+
+    #btn-restart-gameover:hover {
+      background: #ff4da6;
+      transform: scale(1.05);
+    }
+
+    #btn-exit {
+      background: #444;
+      color: white;
+    }
+
+    #btn-exit:hover {
+      background: #666;
+      transform: scale(1.05);
+    }
   </style>
 </head>
 
 <body>
-  <div id="score">Pontuação: 0</div>
-  <div id="lives">Vidas: 3</div>
+  <!-- Add the menu overlay -->
+  <div id="menu-container">
+    <h1 id="game-title" class="glow" style="margin-bottom: 20%;">Starlit Runway</h1>
+    <div id="instructions">
+      <h2>How to Play</h2>
+      <ul>
+        <li><span class="control-key">A</span> or <span class="control-key">←</span> - Move left</li>
+        <li><span class="control-key">D</span> or <span class="control-key">→</span> - Move right</li>
+        <li><span class="control-key">Space</span> - Jump</li>
+        <li><span class="control-key">Ctrl</span> - Change camera view</li>
+        <li><span class="control-key">Esc</span> - Pause game</li>
+      </ul>
+      <p>Collect coins for points and wing power-ups to fly!</p>
+      <p>Avoid bombs or you'll lose a life!</p>
+    </div>
+    <button id="start-button">Start Adventure</button>
+  </div>
+
+  <!-- Game UI elements -->
+  <div id="score">Score: 0</div>
+  <div id="lives">Lives: 3</div>
   <div id="pause">
     PAUSED
     <div id="pause-buttons">
@@ -84,10 +267,250 @@
     </div>
   </div>
 
+  <div id="gameover" style="display: none;">
+    <h1>Game Over</h1>
+    <div id="final-score">Final Score: 0</div>
+    <div id="gameover-buttons">
+      <button id="btn-restart-gameover">Play Again</button>
+      <button id="btn-exit">Exit Game</button>
+    </div>
+  </div>
+
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // Flag to check if game has started
+    let gameStarted = false;
+
+    // Get start button and add click handler
+    document.getElementById('start-button').addEventListener('click', startGame);
+
+    // Replace the existing startGame function
+    function startGame() {
+      // Start background music
+      backgroundMusic.play().catch(error => {
+        console.warn("Audio couldn't autoplay:", error);
+        // Many browsers require user interaction before playing audio
+      });
+
+      // Start transition animation
+      transitionToGame();
+    }
+
+    // Replace the transitionToGame function with this enhanced version
+    function transitionToGame() {
+      const transitionDuration = 2000; // 2 seconds for smoother animation
+      const startTime = Date.now();
+
+      // Initial and target positions/rotations
+      const initialRotation = 165 * (Math.PI / 180); // Current menu fairy rotation (165 degrees)
+      const targetRotation = Math.PI / 2; // Game fairy rotation (90 degrees)
+
+      // Calculate rotation delta (we need to rotate -165 degrees + 90 degrees = -75 degrees)
+      const rotationDelta = targetRotation - initialRotation;
+
+      // Initial and target positions
+      const initialPosition = new THREE.Vector3(0, -1, 0); // Current menu position
+      const targetPosition = new THREE.Vector3(0, -2.3, 0); // Game start position
+
+      function animateTransition() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / transitionDuration, 1);
+
+        // Use easing for smoother animation
+        const easeProgress = easeInOutCubic(progress);
+
+        // Fade out the menu UI
+        document.getElementById('menu-container').style.opacity = 1 - progress;
+
+        if (menuCamera && menuFairy) {
+          // Rotate the fairy smoothly from 165 degrees to 90 degrees
+          menuFairy.rotation.y = initialRotation + rotationDelta * easeProgress;
+
+          // Move fairy from menu position to game position
+          const newX = initialPosition.x + (targetPosition.x - initialPosition.x) * easeProgress;
+          const newY = initialPosition.y + (targetPosition.y - initialPosition.y) * easeProgress;
+          const newZ = initialPosition.z + (targetPosition.z - initialPosition.z) * easeProgress;
+          menuFairy.position.set(newX, newY, newZ);
+
+          // Add a little bounce effect during transition
+          if (progress < 0.7) {
+            menuFairy.position.y += Math.sin(progress * Math.PI * 3) * 0.2 * (1 - progress);
+          }
+
+          // Camera follows fairy with zoom effect
+          menuCamera.position.z = 5 - progress * 2;
+          menuCamera.lookAt(menuFairy.position);
+
+          // Update fairy animation
+          if (menuMixer) {
+            menuMixer.update(0.016);
+          }
+
+          // Create sparkle trail effect during rotation
+          if (progress < 0.8 && Math.random() > 0.8) {
+            const sparkle = new THREE.Sprite(
+              new THREE.SpriteMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8
+              })
+            );
+            sparkle.scale.set(0.1, 0.1, 0.1);
+            sparkle.position.copy(menuFairy.position);
+            sparkle.position.x += (Math.random() - 0.5) * 0.3;
+            sparkle.position.y += (Math.random() - 0.5) * 0.3;
+            sparkle.position.z += (Math.random() - 0.5) * 0.3;
+            menuScene.add(sparkle);
+
+            // Fade out sparkle
+            setTimeout(() => {
+              const startFade = Date.now();
+              const fadeDuration = 500;
+
+              function fadeSparkle() {
+                const fadeElapsed = Date.now() - startFade;
+                const fadeProgress = Math.min(fadeElapsed / fadeDuration, 1);
+
+                sparkle.material.opacity = 0.8 * (1 - fadeProgress);
+                sparkle.scale.multiplyScalar(1.01);
+
+                if (fadeProgress < 1) {
+                  requestAnimationFrame(fadeSparkle);
+                } else {
+                  menuScene.remove(sparkle);
+                }
+              }
+              fadeSparkle();
+            }, 100);
+          }
+
+          // Render menu scene with transition effects
+          menuRenderer.render(menuScene, menuCamera);
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateTransition);
+        } else {
+          completeTransition();
+        }
+      }
+
+      // Easing function for smoother animation
+      function easeInOutCubic(x) {
+        return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+      }
+
+      // Start the transition animation
+      animateTransition();
+
+      // Replace the completeTransition function with this improved version 
+      function completeTransition() {
+        // Stop and clear menu animations
+        if (menuMixer) {
+          menuMixer.stopAllAction();
+          menuMixer.uncacheRoot(menuFairy);
+          menuMixer = null;
+        }
+
+        // Stop all menu animations
+        if (menuIdleAction) {
+          menuIdleAction.stop();
+          menuIdleAction = null;
+        }
+
+        // Clean up menu scene objects
+        if (menuScene) {
+          // Properly dispose fireflies
+          if (menuFireflies) {
+            menuFireflies.children.forEach(firefly => {
+              if (firefly.material) {
+                firefly.material.dispose();
+              }
+            });
+            menuScene.remove(menuFireflies);
+          }
+
+          // Dispose menu trees
+          menuTrees.forEach(tree => {
+            resourceManager.disposeObject(tree);
+          });
+          menuTrees = [];
+
+          // Dispose fairy model
+          if (menuFairy) {
+            resourceManager.disposeObject(menuFairy);
+            menuFairy = null;
+          }
+
+          // Clear the scene from memory
+          menuScene.clear();
+          menuScene = null;
+        }
+
+        // Remove menu renderer from DOM
+        if (menuRenderer) {
+          if (menuRenderer.domElement && menuRenderer.domElement.parentNode) {
+            menuRenderer.domElement.parentNode.removeChild(menuRenderer.domElement);
+          }
+          menuRenderer.dispose();
+          menuRenderer = null;
+        }
+
+        // Clear references to the menu camera
+        menuCamera = null;
+
+        // Hide menu UI
+        document.getElementById('menu-container').style.display = 'none';
+
+        // Show game UI
+        document.getElementById('score').style.display = 'block';
+        document.getElementById('lives').style.display = 'block';
+
+        // If player model is already loaded, make sure it's at correct position/rotation
+        if (playerModel) {
+          playerModel.position.set(0, -2.3, 0);
+          playerModel.rotation.y = Math.PI / 2;
+          playerModel.visible = true;
+        }
+
+
+        // Spawn initial objects before game starts
+        for (let i = 0; i < 5; i++) {
+          // Calculate staggered z positions from -5 to -25
+          const z = -5 - (i * 5);
+
+          // Add coins
+          if (i % 2 === 0) {
+            const coinX = (Math.random() - 0.5) * (LIMITE_ESTRADA * 1.5);
+            spawnCoin(coinX, -2.3, z);
+          }
+
+          // Add a power-up
+          if (i === 2) {
+            const powerX = (Math.random() - 0.5) * (LIMITE_ESTRADA * 1.5);
+            spawnPowerUp(powerX, -2.3, z - 2);
+          }
+        }
+        // Start the game
+        gameStarted = true;
+
+
+
+        // Hint to the browser to perform garbage collection
+        if (window.gc) {
+          window.gc();
+        }
+
+        // Start the game animation loop
+        animate();
+      }
+    }
+
+    // Add CSS transition to menu container
+    document.getElementById('menu-container').style.transition = 'opacity 1s ease';
 
     let gravityInverted = false;
     let isFlying = false;
@@ -96,7 +519,7 @@
 
     // Parâmetros para ciclo dia-noite
     const dayNightDuration = 60 * 1000; // 1 minuto em ms
-    let dayNightStart = Date.now();
+    let dayNightStart = Date.now() - (dayNightDuration * 0.125);
 
     const dayColors = {
       skyTop: new THREE.Color('#ffd6f6'),
@@ -116,6 +539,21 @@
 
     const textureLoader = new THREE.TextureLoader();
     const barkTexture = textureLoader.load('https://threejs.org/examples/textures/tree/bark.jpg');
+
+    const coinSound = new Audio('assets/audio/coin-get.ogg');
+    coinSound.volume = 0.5; // Adjust volume as needed
+
+    const wingSound = new Audio('assets/audio/wing_powerup.wav');
+    wingSound.volume = 0.5; // Adjust volume as needed
+
+    const bombSound = new Audio('assets/audio/damage.wav');
+    bombSound.volume = 0.5; // Adjust volume as needed
+
+    // Add this code right after the other audio declarations (around line 541)
+    // Background music
+    const backgroundMusic = new Audio('assets/audio/2019-05-17_-_In_The_Clouds_-_David_Fesliyan.mp3');
+    backgroundMusic.loop = true;
+    backgroundMusic.volume = 0.4; // Set to 40% volume so it doesn't overpower sound effects
 
     const scene = new THREE.Scene();
 
@@ -298,6 +736,7 @@
     ground.rotation.x = -Math.PI / 2;
     ground.position.set(0, -2.5, 0);
     ground.receiveShadow = true;
+    ground.castShadow = true;
     scene.add(ground);
 
     const lightGroup = new THREE.Group();
@@ -386,13 +825,22 @@
     // Cria o mesh do sol (que também será a lua)
     const sun = new THREE.Mesh(
       new THREE.SphereGeometry(2, 32, 32),
-      new THREE.MeshBasicMaterial({ map: sunTexture })
+      new THREE.MeshBasicMaterial({
+        map: sunTexture,
+        emissive: 0xffff80,
+        emissiveIntensity: 1.0
+      })
     );
     sun.position.set(10, 5, -10);
-    sun.castShadow = true;
+    sun.castShadow = false;
     scene.add(sun);
     sun.material.map = sunTexture;
     sun.material.needsUpdate = true;
+
+    // Add a point light that will follow the sun
+    const sunPointLight = new THREE.PointLight(0xffffcc, 1.5, 50);
+    sunPointLight.position.copy(sun.position);
+    scene.add(sunPointLight);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.45); // Mais luz ambiente
     scene.add(ambientLight);
@@ -400,11 +848,22 @@
     const sunLight = new THREE.DirectionalLight(0xffffff, 0.55); // Menos intensidade e cor neutra
     sunLight.position.set(10, 20, -10);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
-    sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 50;
+
+    // Add this after the sun light creation (around line 544)
+    // Improve shadow quality for the main scene
+    sunLight.shadow.mapSize.width = 2048;  // Higher resolution shadow map
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.1;
+    sunLight.shadow.camera.far = 100;
+
+    // Set up proper shadow camera frustum to contain all trees
+    sunLight.shadow.camera.left = -30;
+    sunLight.shadow.camera.right = 30;
+    sunLight.shadow.camera.top = 30;
+    sunLight.shadow.camera.bottom = -30;
+    sunLight.shadow.bias = -0.0005;
     scene.add(sunLight);
+
 
     const fireflies = new THREE.Group();
     const fireflyTexture = new THREE.SpriteMaterial({ color: '#ccffcc' });
@@ -435,12 +894,173 @@
       window.location.reload();
     });
 
+    // Game Over buttons
+    const gameoverDiv = document.getElementById('gameover');
+    const btnRestartGameover = document.getElementById('btn-restart-gameover');
+    const btnExit = document.getElementById('btn-exit');
+    const finalScoreEl = document.getElementById('final-score');
+
+    btnRestartGameover.addEventListener('click', () => {
+      restartGame();  // Use our new function instead of reloading page
+    });
+
+    btnExit.addEventListener('click', () => {
+      returnToMainMenu();
+    });
+
+    // Add this new function to handle returning to the main menu
+    function returnToMainMenu() {
+      // Hide game over screen
+      gameoverDiv.style.display = 'none';
+
+      // Reset game state
+      score = 0;
+      lives = 3;
+      updateScore();
+      updateLives();
+
+      // Hide game UI
+      document.getElementById('score').style.display = 'none';
+      document.getElementById('lives').style.display = 'none';
+
+      // Reset player position
+      cube.position.set(0, -2.3, 0);
+      cube.velocity.y = -0.01;
+      cube.gravity = -0.005;
+      gravityInverted = false;
+      isFlying = false;
+
+      // Clear all enemies
+      while (enemies.length > 0) {
+        const enemy = enemies.pop();
+        scene.remove(enemy);
+      }
+
+      // Reset player model
+      if (playerModel) {
+        playerModel.visible = false;
+      }
+
+      // Reset game flags
+      gameStarted = false;
+      paused = false;
+
+      // Re-initialize menu scene
+      if (!menuScene) {
+        setupMenuScene();
+      } else {
+        // Just make sure the menu renderer is added back if needed
+        if (!document.body.contains(menuRenderer.domElement)) {
+          document.body.insertBefore(menuRenderer.domElement, document.body.firstChild);
+        }
+      }
+
+      // Show menu container
+      document.getElementById('menu-container').style.display = 'block';
+      document.getElementById('menu-container').style.opacity = '1';
+
+      // Restart menu animation
+      animateMenu();
+    }
+
+    // Create a function to show the game over screen
+    function showGameOver() {
+      paused = true;
+      gameoverDiv.style.display = 'block';
+      finalScoreEl.textContent = `Final Score: ${score}`;
+
+      // Lower music volume during game over
+      backgroundMusic.volume = 0.2;
+
+      // Stop all animations and sounds
+      if (mixer) {
+        mixer.stopAllAction();
+      }
+      if (coinSound) {
+        coinSound.pause();
+      }
+      if (wingSound) {
+        wingSound.pause();
+      }
+      if (bombSound) {
+        bombSound.pause();
+      }
+    }
+
+    // Add this new function to restart the game immediately
+    function restartGame() {
+      // Hide game over screen
+      gameoverDiv.style.display = 'none';
+
+      // Reset music volume
+      backgroundMusic.volume = 0.4;
+
+      // Make sure music is playing
+      if (backgroundMusic.paused) {
+        backgroundMusic.play().catch(e => console.warn("Couldn't restart audio:", e));
+      }
+
+      // Reset game state
+      score = 0;
+      lives = 3;
+      updateScore();
+      updateLives();
+
+      // Reset player position and state
+      cube.position.set(0, -2.3, 0);
+      cube.velocity.y = -0.01;
+      cube.gravity = -0.005; // Make sure gravity is correct
+      gravityInverted = false;
+      isFlying = false;
+      flyStartTime = 0;
+      flyingCoinsGenerated = false;
+
+      // Clear all enemies
+      while (enemies.length > 0) {
+        const enemy = enemies.pop();
+        scene.remove(enemy);
+      }
+
+      // Reset spawn values
+      spawnCooldown = 100;
+      spawnTimer = 0;
+
+      // Reset player model
+      if (playerModel) {
+        playerModel.position.copy(cube.position);
+        playerModel.position.y = -2.7; // Correct height on ground
+        playerModel.rotation.y = Math.PI / 2; // Facing direction of travel
+        playerModel.rotation.z = 0;
+        playerModel.visible = true;
+      }
+
+      // Reset animations
+      if (mixer) {
+        mixer.stopAllAction();
+        if (idleAction) {
+          idleAction.reset().play();
+        }
+      }
+
+      // Unpause and restart animation
+      paused = false;
+      gameStarted = true;
+      animate();
+    }
+
     window.addEventListener('keydown', e => {
       // PAUSE/UNPAUSE com ESC
       if (e.code === 'Escape' && !e.repeat) {
         paused = !paused;
         pauseDiv.style.display = paused ? 'block' : 'none';
-        if (!paused) animate(); // retoma animação se despausar
+
+        // Pause/resume music based on game state
+        if (paused) {
+          backgroundMusic.pause();
+        } else {
+          backgroundMusic.play().catch(e => console.warn("Couldn't resume audio:", e));
+          animate(); // retoma animação se despausar
+        }
         return;
       }
 
@@ -465,7 +1085,7 @@
     });
 
     const enemies = [];
-    let spawnCooldown = 100;
+    let spawnCooldown = 80;
     let spawnTimer = 0;
     let score = 0;
     let lives = 3;
@@ -482,7 +1102,8 @@
     let playerModel = null;
     let mixer = null;
     let swimAction = null;
-    let idleAction = null;  // Nova variável para a animação idle/padrão
+    let idleAction = null;
+    let takeDamage = null; // Nova variável para a animação idle/padrão
 
     const playerLoader = new GLTFLoader();
     playerLoader.load(
@@ -512,6 +1133,10 @@
             anim.name.toLowerCase().includes("swim")
           );
 
+          const takeDamageClip = gltf.animations.find(anim =>
+            anim.name.toLowerCase().includes("take damage")
+          );
+
           if (idleClip) {
             idleAction = mixer.clipAction(idleClip);
             idleAction.play(); // Inicia com a animação padrão
@@ -524,6 +1149,12 @@
           } else if (idleClip) {
             // Se não encontrar swim, duplica idle para usar como swim
             swimAction = mixer.clipAction(idleClip);
+          }
+
+          if (takeDamageClip) {
+            takeDamage = mixer.clipAction(takeDamageClip);
+          } else {
+            console.warn("Animação de dano não encontrada, usando animação idle como fallback.");
           }
         }
       },
@@ -657,13 +1288,31 @@
 
     // Função para verificar se já existe uma moeda ou asa perto da posição (x, z)
     function isOccupied(x, z, type) {
-      // type: 'coin' ou 'flyPower'
+      // Safety check for empty array
+      if (!enemies || enemies.length === 0) return false;
+
+      // Reduced minimum distance for less collision detection
+      const minDistance = 1.0; // Reduced from 1.5
+
       return enemies.some(obj => {
-        if (!obj.userData || obj.userData.type === type) return false;
-        // Só compara com o outro tipo
+        // Skip invalid objects
+        if (!obj || !obj.position) return false;
+
+        // For coins specifically, be more lenient with placement
+        if (type === 'coin') {
+          // Only consider bombs as blockers for coins
+          if (!obj.userData || obj.userData.type !== 'bomb') {
+            return false;
+          }
+        }
+
+        // Calculate distance
         const dx = obj.position.x - x;
         const dz = obj.position.z - z;
-        return Math.sqrt(dx * dx + dz * dz) < 1.5; // distância mínima
+        const distance = Math.sqrt(dx * dx + dz * dz);
+
+        // Return true if too close (less than minimum distance)
+        return distance < minDistance;
       });
     }
 
@@ -714,19 +1363,44 @@
 
     // --- Ao criar moedas, não cria se já houver asa perto ---
     function spawnCoin(x, y, z) {
-      // Não cria se já houver asa perto
-      if (isOccupied(x, z, 'coin')) return;
+      // Simplified collision check
+      if (isOccupied(x, z, 'coin')) {
+        return null;
+      }
 
+      let coin;
+
+      // Make sure we create a proper coin
       if (coinGLTF) {
-        const coin = coinGLTF.clone(true);
-        coin.position.set(x, y, z);
-        coin.scale.set(1.2, 1.2, 1.2);
-        coin.userData = { type: 'coin' };
-        scene.add(coin);
-        enemies.push(coin);
-        return coin;
-      } else {
-        const enemyCoin = new Box({
+        // Create using the model - fixed cloning method
+        try {
+          // Try different possible ways the model might be structured
+          if (coinGLTF.scene) {
+            coin = coinGLTF.scene.clone();
+          } else if (typeof coinGLTF.clone === 'function') {
+            coin = coinGLTF.clone();
+          } else {
+            throw new Error('Invalid coin model structure');
+          }
+
+          coin.position.set(x, y, z);
+          coin.scale.set(1.2, 1.2, 1.2);
+        } catch (error) {
+          console.warn('Error cloning coin model, falling back to box', error);
+          // Fall back to box if cloning fails
+          coin = new Box({
+            width: 1,
+            height: 1,
+            depth: 1,
+            position: { x, y, z },
+            color: '#FFD700',
+            zAcceleration: true
+          });
+        }
+      }
+      else {
+        // Fallback to simple box
+        coin = new Box({
           width: 1,
           height: 1,
           depth: 1,
@@ -734,17 +1408,50 @@
           color: '#FFD700',
           zAcceleration: true
         });
-        enemyCoin.castShadow = true;
-        enemyCoin.userData = { type: 'coin' };
-        scene.add(enemyCoin);
-        enemies.push(enemyCoin);
-        return enemyCoin;
       }
+
+      // Make sure the type is set properly
+      if (!coin.userData) coin.userData = {};
+      coin.userData.type = 'coin';
+
+      // Add to scene and tracking
+      scene.add(coin);
+      enemies.push(coin);
+      return coin;
     }
+
+    // Also add an event listener for page unload to clean up resources
+    window.addEventListener('beforeunload', function () {
+      // Perform final cleanup
+      resourceManager.disposeAll();
+      objectPools.clearPools();
+
+      // Clear audio resources
+      if (backgroundMusic) {
+        backgroundMusic.pause();
+        backgroundMusic.src = '';
+      }
+      if (coinSound) {
+        coinSound.pause();
+        coinSound.src = '';
+      }
+      if (wingSound) {
+        wingSound.pause();
+        wingSound.src = '';
+      }
+      if (bombSound) {
+        bombSound.pause();
+        bombSound.src = '';
+      }
+
+      // Clear large objects
+      scene = null;
+      renderer.dispose();
+    });
 
     let lastCoinSpawnZ = -10;
     function animate() {
-      if (paused) return;
+      if (paused || !gameStarted) return;
 
       // Desativa voo automaticamente após 5 segundos
       if (isFlying && Date.now() - flyStartTime > FLY_DURATION) {
@@ -785,12 +1492,18 @@
           sun.material.map = sunTexture;
           sun.material.needsUpdate = true;
         }
+        // Make the sun emit more light during the day
+        sunPointLight.intensity = 1.5;
+        sunLight.intensity = 0.55 * (1 - phase * 2); // Brightest at noon (phase = 0)
       } else {
         // Noite: mostra a lua
         if (sun.material.map !== moonTexture) {
           sun.material.map = moonTexture;
           sun.material.needsUpdate = true;
         }
+        // Dim the sun light at night
+        sunPointLight.intensity = 0.1;
+        sunLight.intensity = 0;
       }
 
       if (playerModel) {
@@ -807,18 +1520,15 @@
         }
       }
 
+      // Update sky and fog colors
       skyMaterial.uniforms.topColor.value.lerpColors(dayColors.skyTop, nightColors.skyTop, phase);
       skyMaterial.uniforms.bottomColor.value.lerpColors(dayColors.skyBottom, nightColors.skyBottom, phase);
       scene.fog.color.lerpColors(dayColors.fog, nightColors.fog, phase);
       sun.material.color.lerpColors(dayColors.sun, nightColors.sun, phase);
-      ambientLight.intensity = dayColors.ambient * (1 - phase) + nightColors.ambient * phase;
-      sunLight.intensity = 1.5 * (1 - phase) + 0.3 * phase;
+      ambientLight.intensity = 0.45;
 
-      // Luzes dos limites laterais acendem à noite
-      lateralLights.forEach(light => {
-        light.intensity = 1.2 * phase;
-      });
-      // -----------------------
+      // Update the position of the point light to follow the sun
+      sunPointLight.position.copy(sun.position);
 
       fireflies.children.forEach((f, i) => {
         f.position.y += Math.sin(Date.now() * 0.002 + i) * 0.003;
@@ -863,20 +1573,31 @@
       enemies.forEach((enemy, i) => {
         if (enemy.userData && enemy.userData.type === 'coin') {
           enemy.position.z += forwardSpeed;
-          // Colisão simples
+
+          // Ensure rotation works correctly
+          enemy.rotation.y += 0.15;
+
+          // Create bounding boxes for collision detection
           const coinBox = new THREE.Box3().setFromObject(enemy);
           const playerBox = new THREE.Box3().setFromCenterAndSize(
             cube.position,
             new THREE.Vector3(cube.width, cube.height, cube.depth)
           );
+
           if (coinBox.intersectsBox(playerBox)) {
             score += 5;
             updateScore();
+
+            // Remove from scene
             scene.remove(enemy);
+
+            // Instead of trying to return to pool now, just remove
             enemies.splice(i, 1);
+
+            // Play sound effect
+            coinSound.currentTime = 0;
+            coinSound.play();
           }
-          // Efeito de rotação
-          enemy.rotation.y += 0.15;
         } else if (enemy.userData && enemy.userData.type === 'flyPower') {
           enemy.position.z += forwardSpeed;
           // Colisão com o cubo verde ativa o voo
@@ -893,6 +1614,9 @@
             isFlying = true;
             flyStartTime = Date.now();
             flyingCoinsGenerated = false; // Permite gerar moedas voadoras no próximo voo
+
+            wingSound.currentTime = 0; // Reset the sound to start
+            wingSound.play();
 
             // Ativa a animação de natação
             if (mixer && swimAction && idleAction) {
@@ -930,9 +1654,72 @@
           if (bombBox.intersectsBox(playerBox)) {
             lives--;
             updateLives();
+
+            bombSound.currentTime = 0; // Reset the sound to start
+            bombSound.play();
+
+            // Add damage animation here
+            if (playerModel) {
+              // Play take_damage animation if available
+              if (mixer && takeDamage && idleAction) {
+                // Fade out current animations
+                idleAction.fadeOut(0.2);
+                //if (isFlying && swimAction) swimAction.fadeOut(0.2);
+
+                // Play damage animation
+                takeDamage.reset().fadeIn(0.2).play();
+
+                // Return to previous animation after damage animation completes
+                setTimeout(() => {
+                  takeDamage.fadeOut(0.3);
+                  if (isFlying && swimAction) {
+                    swimAction.reset().fadeIn(0.3).play();
+                  } else {
+                    idleAction.reset().fadeIn(0.3).play();
+                  }
+                }, 500); // Animation duration in ms
+              }
+
+              // Also keep the visual damage effect (flash red + shake)
+              playerModel.traverse(child => {
+                if (child.isMesh && child.material) {
+                  // Save original color
+                  child.userData.originalColor = child.material.color.clone();
+                  // Set to red
+                  child.material.color.set('#ff0000');
+                }
+              });
+
+              // Add slight shake animation
+              const originalPosition = playerModel.position.clone();
+              const shakeIntensity = 0.05;
+
+              // Animation timeline for damage effect
+              const shakeDuration = 500; // ms
+              const startTime = Date.now();
+
+              function animateDamage() {
+                const elapsed = Date.now() - startTime;
+                if (elapsed < shakeDuration) {
+                  // Apply shake effect
+                  playerModel.position.x = originalPosition.x + (Math.random() - 0.5) * shakeIntensity;
+                  playerModel.position.y = originalPosition.y + (Math.random() - 0.5) * shakeIntensity;
+                  requestAnimationFrame(animateDamage);
+                } else {
+                  // Reset position and color when done
+                  playerModel.position.copy(originalPosition);
+                  playerModel.traverse(child => {
+                    if (child.isMesh && child.material && child.userData.originalColor) {
+                      child.material.color.copy(child.userData.originalColor);
+                    }
+                  });
+                }
+              }
+              animateDamage();
+            }
+
             if (lives <= 0) {
-              alert(`Game Over! Pontuação final: ${score}`);
-              window.location.reload();
+              showGameOver();
             }
             scene.remove(enemy);
             enemies.splice(i, 1);
@@ -950,8 +1737,7 @@
               lives--;
               updateLives();
               if (lives <= 0) {
-                alert(`Game Over! Pontuação final: ${score}`);
-                window.location.reload();
+                showGameOver();
               }
             }
             scene.remove(enemy);
@@ -960,7 +1746,7 @@
         }
       });
 
-      // Substitua o bloco do sistema de câmeras com este:
+      // Substitua o bloco do sistema de câmaras com este:
       // --------- SISTEMA DE CÂMARAS ---------
       // 1ª pessoa
       camera1st.position.set(
@@ -1005,43 +1791,49 @@
       if (spawnTimer >= spawnCooldown) {
         spawnTimer = 0;
         if (spawnCooldown > 10) spawnCooldown -= 1;
-        const isRed = Math.random() < 0.5;
-        const isPowerUp = Math.random() < 1; // 1% de chance de aparecer um power up
+
+        const spawnRoll = Math.random();
         const lateralLimit = LIMITE_ESTRADA - cube.width / 2;
-        const xPos = (Math.random() - 0.5) * (lateralLimit * 2);
 
-        if (isRed) {
-          // Substitui o cubo vermelho por uma bomba
-          spawnBomb(xPos, 0, -30);
-
-          // Moeda ao lado da bomba, sempre no chão
-          const yCoin = -2.3;
-          const offset = 1.2;
-          let coinX = xPos + (Math.random() < 0.5 ? -offset : offset);
-          if (coinX < -lateralLimit) coinX = -lateralLimit;
-          if (coinX > lateralLimit) coinX = lateralLimit;
-          spawnCoin(coinX, yCoin, -30);
-
-          // Power up ao lado da bomba
-          if (isPowerUp) {
-            const yPower = -2.3;
-            const offset = 2.2;
-            let powerX = xPos + (Math.random() < 0.5 ? -offset : offset);
-            if (powerX < -lateralLimit) powerX = -lateralLimit;
-            if (powerX > lateralLimit) powerX = lateralLimit;
-            spawnPowerUp(powerX, yPower, -30);
-          }
-        } else {
-          // Moeda sozinha, sempre no chão
-          const yCoin = -2.3;
+        // 55% coins, 40% bombs, 5% power-ups
+        if (spawnRoll < 0.55) {
+          // Spawn a coin
           const coinX = (Math.random() - 0.5) * (lateralLimit * 2);
-          spawnCoin(coinX, yCoin, -30);
+          const coinY = -2.3;
+          spawnCoin(coinX, coinY, -30);
 
-          // Power up sozinho
-          if (isPowerUp) {
-            const yPower = -2.3;
-            const powerX = (Math.random() - 0.5) * (lateralLimit * 2);
-            spawnPowerUp(powerX, yPower, -30);
+          // Add a second coin nearby with 30% chance
+          if (Math.random() < 0.3) {
+            const coinX2 = coinX + (Math.random() - 0.5) * 1.5;
+            spawnCoin(coinX2, coinY, -30 - Math.random() * 2);
+          }
+        }
+        else if (spawnRoll < 0.95) {
+          // Spawn a bomb (40% chance)
+          const bombX = (Math.random() - 0.5) * (lateralLimit * 2);
+          spawnBomb(bombX, 0, -30);
+
+          // Add a coin on the side of the bomb with 70% chance
+          if (Math.random() < 0.7) {
+            const coinY = -2.3;
+            const offset = 1.5 + Math.random() * 0.5;
+            let coinX = bombX + (Math.random() < 0.5 ? -offset : offset);
+            if (coinX < -lateralLimit) coinX = -lateralLimit + 0.5;
+            if (coinX > lateralLimit) coinX = lateralLimit - 0.5;
+            spawnCoin(coinX, coinY, -30);
+          }
+        }
+        else {
+          // Spawn a power up (5% chance)
+          const powerX = (Math.random() - 0.5) * (lateralLimit * 2);
+          const powerY = -2.3;
+          spawnPowerUp(powerX, powerY, -30);
+
+          // Add coins near power-ups to create rewarding paths
+          if (Math.random() < 0.8) {
+            const offset = 1.8;
+            const coinX = powerX + (Math.random() < 0.5 ? -offset : offset);
+            spawnCoin(coinX, powerY, -30);
           }
         }
       }
@@ -1057,14 +1849,14 @@
         flyingCoins = [];
 
         // Parâmetros de tempo
-        const delay = 1000; // ms (1 segundo após início)
+        const delay = 1; // ms (1 segundo após início)
         const endBuffer = 500; // ms (meio segundo antes do fim)
-        const availableTime = FLY_DURATION - delay - endBuffer; // tempo útil para apanhar moedas
+        const availableTime = FLY_DURATION - delay; // tempo útil para apanhar moedas
 
         // Calcula o número de moedas proporcional à velocidade (mínimo 10, máximo 20)
         // Quanto mais rápido, mais moedas
         let coinsToGenerate = Math.round(
-          10 + 10 * ((forwardSpeed - BASE_FORWARD_SPEED) / (MAX_FORWARD_SPEED - BASE_FORWARD_SPEED))
+          10 + 10 * ((forwardSpeed - BASE_FORWARD_SPEED)) // (MAX_FORWARD_SPEED - BASE_FORWARD_SPEED))
         );
         coinsToGenerate = Math.max(10, Math.min(20, coinsToGenerate));
 
@@ -1108,6 +1900,12 @@
           Math.sin(angle) * sunHeight, // Movimento vertical
           -10 // Mantém a posição Z
         );
+        // Move the directional light to follow the sun
+        sunLight.position.set(
+          sun.position.x,
+          sun.position.y + 10,
+          sun.position.z
+        );
       } else {
         // Noite: movimento da lua
         const angle = Math.PI * (phase - 0.5); // Ângulo da lua (0 a π)
@@ -1118,7 +1916,452 @@
         );
       }
     }
-    animate();
+
+    // Menu scene variables
+    let menuScene, menuCamera, menuRenderer;
+    let menuFairy = null;
+    let menuMixer = null;
+    let menuIdleAction = null;
+    let menuFloatPhase = 0;
+    let menuTrees = [];
+    let menuFireflies;
+
+    // Setup menu scene
+    function setupMenuScene() {
+      // Create separate renderer for menu
+      menuRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      menuRenderer.setSize(window.innerWidth, window.innerHeight);
+      menuRenderer.shadowMap.enabled = true;
+      menuRenderer.domElement.style.position = 'absolute';
+      menuRenderer.domElement.style.top = '0';
+      menuRenderer.domElement.style.left = '0';
+      menuRenderer.domElement.style.zIndex = '99'; // Below the menu container
+      document.body.insertBefore(menuRenderer.domElement, document.body.firstChild);
+
+      // Create menu scene
+      menuScene = new THREE.Scene();
+
+      // Setup camera
+      menuCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      menuCamera.position.set(0, 0, 5);
+      menuCamera.lookAt(0, 0, 0);
+
+      // Add lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      menuScene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffcc, 0.7);
+      dirLight.position.set(5, 10, 7);
+      // Also fix the menu scene shadows (around line 2039 in setupMenuScene)
+      // Modify the dirLight in the menu scene:
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      dirLight.shadow.camera.near = 0.1;
+      dirLight.shadow.camera.far = 100;
+      dirLight.shadow.camera.left = -20;
+      dirLight.shadow.camera.right = 20;
+      dirLight.shadow.camera.top = 20;
+      dirLight.shadow.camera.bottom = -5;
+      dirLight.shadow.bias = -0.0005;
+      menuScene.add(dirLight);
+
+
+      // Create enchanted sky background
+      const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+      const skyMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          topColor: { value: new THREE.Color('#8624e1') },
+          bottomColor: { value: new THREE.Color('#ff69b4') },
+        },
+        vertexShader: `
+      varying vec3 vWorldPosition;
+      void main() {
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }
+    `,
+        fragmentShader: `
+      uniform vec3 topColor;
+      uniform vec3 bottomColor;
+      varying vec3 vWorldPosition;
+      void main() {
+        float height = normalize(vWorldPosition).y;
+        gl_FragColor = vec4(mix(bottomColor, topColor, max(height, 0.0)), 1.0);
+      }
+    `,
+        side: THREE.BackSide,
+      });
+      const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+      menuScene.add(sky);
+
+      // Add ground
+      const ground = new THREE.Mesh(
+        new THREE.CircleGeometry(20, 64),
+        new THREE.MeshStandardMaterial({
+          color: '#3a8f5a',
+          side: THREE.DoubleSide
+        })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -2.5;
+      ground.receiveShadow = true;
+      menuScene.add(ground);
+
+      // Add fireflies for magical effect
+      menuFireflies = new THREE.Group();
+      const fireflyMaterial = new THREE.SpriteMaterial({
+        color: '#ffffaa',
+        transparent: true,
+        opacity: 0.8
+      });
+
+      for (let i = 0; i < 100; i++) {
+        const sprite = new THREE.Sprite(fireflyMaterial.clone());
+        sprite.scale.set(0.2, 0.2, 0.2);
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 2 + Math.random() * 10;
+        sprite.position.set(
+          Math.cos(angle) * radius,
+          Math.random() * 6 - 1,
+          Math.sin(angle) * radius
+        );
+        sprite.userData = {
+          velocity: new THREE.Vector3(
+            (Math.random() - 0.5) * 0.02,
+            (Math.random() - 0.5) * 0.02,
+            (Math.random() - 0.5) * 0.02
+          ),
+          pulse: Math.random() * Math.PI
+        };
+        menuFireflies.add(sprite);
+      }
+      menuScene.add(menuFireflies);
+
+      // Add enchanted trees
+      function addMenuTrees(count = 15) {
+        const menuEnvironmentalObjects = [];
+
+        function isMenuPositionOccupied(x, z, minDistance = 3.0) {
+          return menuEnvironmentalObjects.some(obj => {
+            const dx = obj.x - x;
+            const dz = obj.z - z;
+            return Math.sqrt(dx * dx + dz * dz) < minDistance;
+          });
+        }
+
+        let treesAdded = 0;
+        let attempts = 0;
+        const maxAttempts = count * 3;
+
+        while (treesAdded < count && attempts < maxAttempts) {
+          attempts++;
+
+          // Position trees in a circle
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 6 + Math.random() * 5;
+          const x = Math.cos(angle) * radius;
+          const z = Math.sin(angle) * radius;
+
+          // Skip if too close to other trees
+          if (isMenuPositionOccupied(x, z, 2.5)) {
+            continue;
+          }
+
+          // Save position
+          menuEnvironmentalObjects.push({ x, z });
+          treesAdded++;
+
+          const treeHeight = 2 + Math.random() * 1;
+          const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.12, treeHeight),
+            new THREE.MeshStandardMaterial({ map: barkTexture })
+          );
+          trunk.castShadow = true;
+          trunk.receiveShadow = true;
+
+          // Vibrant colors for enchanted forest
+          const colors = ['#9370db', '#32cd32', '#4b0082', '#1e90ff'];
+          const coneMaterial = new THREE.MeshStandardMaterial({
+            color: colors[Math.floor(Math.random() * colors.length)],
+            emissive: '#222',
+            emissiveIntensity: 0.2
+          });
+
+          const cones = [];
+          for (let j = 0; j < 3; j++) {
+            const cone = new THREE.Mesh(
+              new THREE.ConeGeometry(0.6 - j * 0.1, 0.8, 8),
+              coneMaterial
+            );
+            cone.castShadow = true;
+            cone.receiveShadow = true;
+            cones.push(cone);
+          }
+
+          // Position trees in a circle
+          const treeAngle = Math.random() * Math.PI * 2;
+          const treeRadius = 6 + Math.random() * 5;
+          const treeX = Math.cos(treeAngle) * treeRadius;
+          const treeZ = Math.sin(treeAngle) * treeRadius;
+
+          const y = -2.5;
+          const trunkTopY = y + treeHeight / 2;
+          trunk.position.set(treeX, trunkTopY, treeZ);
+          menuScene.add(trunk);
+          menuTrees.push(trunk);
+
+          cones.forEach((cone, idx) => {
+            const heightSoFar = trunkTopY + 0.6 + idx * 0.5;
+            cone.position.set(treeX, heightSoFar, treeZ);
+            menuScene.add(cone);
+            menuTrees.push(cone);
+          });
+        }
+      }
+
+      addMenuTrees();
+
+      // Load fairy model
+      const menuFairyLoader = new GLTFLoader();
+      menuFairyLoader.load('assets/models/flora_sirenix.glb', (gltf) => {
+
+        menuFairy = gltf.scene;
+        menuFairy.scale.set(0.8, 0.8, 0.8);
+        menuFairy.position.set(0, -1, 0);
+
+        // Change this line:
+        // menuFairy.rotation.y = 0; // Facing camera
+
+        // To this:
+        menuFairy.rotation.y = 165 * (Math.PI / 180); // Rotate by 165 degrees
+
+        menuFairy.castShadow = true;
+        menuFairy.receiveShadow = true;
+        menuScene.add(menuFairy);
+
+        // Animation mixer
+        menuMixer = new THREE.AnimationMixer(menuFairy);
+
+        if (gltf.animations && gltf.animations.length > 0) {
+          const idleClip = gltf.animations.find(anim =>
+            anim.name.toLowerCase().includes("idle")
+          );
+
+          if (idleClip) {
+            menuIdleAction = menuMixer.clipAction(idleClip);
+            menuIdleAction.play();
+          }
+        }
+      });
+    }
+
+    // Animate menu scene
+    function animateMenu() {
+      if (!gameStarted) {
+        requestAnimationFrame(animateMenu);
+
+        // Animate fireflies
+        menuFireflies.children.forEach((firefly) => {
+          // Gentle float movement
+          firefly.position.x += firefly.userData.velocity.x;
+          firefly.position.y += firefly.userData.velocity.y;
+          firefly.position.z += firefly.userData.velocity.z;
+
+          // Pulsing glow
+          firefly.userData.pulse += 0.02;
+          firefly.material.opacity = 0.5 + 0.5 * Math.sin(firefly.userData.pulse);
+
+          // Boundary check and reverse
+          if (Math.abs(firefly.position.x) > 10 ||
+            firefly.position.y < -1 || firefly.position.y > 6 ||
+            Math.abs(firefly.position.z) > 10) {
+            firefly.userData.velocity.multiplyScalar(-1);
+          }
+        });
+
+        // Animate fairy floating
+        if (menuFairy) {
+          menuFloatPhase += 0.01;
+          menuFairy.position.y = -1 + Math.sin(menuFloatPhase) * 0.1;
+
+          if (menuMixer) {
+            menuMixer.update(0.016);
+          }
+        }
+
+        // Render menu scene
+        menuRenderer.render(menuScene, menuCamera);
+      }
+    }
+
+    // Initialize menu scene
+    setupMenuScene();
+    animateMenu();
+
+    // Resource management system
+    const resourceManager = {
+      // Track all disposable resources
+      textures: [],
+      geometries: [],
+      materials: [],
+
+      // Method to register resources for later disposal
+      track: function (resource, type) {
+        if (type === 'texture' && !this.textures.includes(resource)) {
+          this.textures.push(resource);
+        } else if (type === 'geometry' && !this.geometries.includes(resource)) {
+          this.geometries.push(resource);
+        } else if (type === 'material' && !this.materials.includes(resource)) {
+          this.materials.push(resource);
+        }
+      },
+
+      // Method to dispose specific resources
+      dispose: function (resource) {
+        if (resource.isTexture) {
+          resource.dispose();
+          const index = this.textures.indexOf(resource);
+          if (index !== -1) this.textures.splice(index, 1);
+        } else if (resource.isBufferGeometry) {
+          resource.dispose();
+          const index = this.geometries.indexOf(resource);
+          if (index !== -1) this.geometries.splice(index, 1);
+        } else if (resource.isMaterial) {
+          resource.dispose();
+          const index = this.materials.indexOf(resource);
+          if (index !== -1) this.materials.splice(index, 1);
+        }
+      },
+
+      // Method to clean up an object and all its children
+      disposeObject: function (object) {
+        if (!object) return;
+
+        // First process all children recursively
+        if (object.children && object.children.length > 0) {
+          // Create a copy of the children array to avoid modification issues during iteration
+          const children = [...object.children];
+          for (let i = 0; i < children.length; i++) {
+            this.disposeObject(children[i]);
+          }
+        }
+
+        // Then dispose of this object's resources
+        if (object.geometry) {
+          object.geometry.dispose();
+          const geoIndex = this.geometries.indexOf(object.geometry);
+          if (geoIndex !== -1) this.geometries.splice(geoIndex, 1);
+        }
+
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            for (let i = 0; i < object.material.length; i++) {
+              this.disposeMaterial(object.material[i]);
+            }
+          } else {
+            this.disposeMaterial(object.material);
+          }
+        }
+
+        // Remove from parent to completely detach from scene
+        if (object.parent) {
+          object.parent.remove(object);
+        }
+      },
+
+      // Helper method to properly dispose materials
+      disposeMaterial: function (material) {
+        if (!material) return;
+
+        // Dispose textures used by this material
+        for (const prop in material) {
+          const value = material[prop];
+          if (value && value.isTexture) {
+            value.dispose();
+            const texIndex = this.textures.indexOf(value);
+            if (texIndex !== -1) this.textures.splice(texIndex, 1);
+          }
+        }
+
+        // Dispose the material itself
+        material.dispose();
+        const matIndex = this.materials.indexOf(material);
+        if (matIndex !== -1) this.materials.splice(matIndex, 1);
+      },
+
+      // Method to clear all tracked resources
+      disposeAll: function () {
+        // Dispose all textures
+        this.textures.forEach(texture => texture.dispose());
+        this.textures = [];
+
+        // Dispose all geometries
+        this.geometries.forEach(geometry => geometry.dispose());
+        this.geometries = [];
+
+        // Dispose all materials
+        this.materials.forEach(material => material.dispose());
+        this.materials = [];
+      }
+    };
+
+    // Improve the texture loading to track resources
+    const enhancedTextureLoader = {
+      load: function (url) {
+        const texture = textureLoader.load(url,
+          // Success callback
+          function (loadedTexture) {
+            resourceManager.track(loadedTexture, 'texture');
+          },
+          undefined,
+          function (err) {
+            console.error('Error loading texture:', url, err);
+          }
+        );
+        return texture;
+      }
+    };
+
+    // Initialize object pools
+    const objectPools = {
+      coins: [],
+      wings: [],
+      bombs: [],
+      sparkles: [],
+
+      getFromPool: function (type) {
+        const pool = this[type];
+        if (pool && pool.length > 0) {
+          return pool.pop();
+        }
+        return null;
+      },
+
+      returnToPool: function (object, type) {
+        if (!object || !this[type]) return;
+
+        // Reset the object state
+        object.visible = false;
+        if (object.position) object.position.set(0, 0, 0);
+
+        // Add back to pool
+        this[type].push(object);
+      },
+
+      clearPools: function () {
+        // Dispose all objects in pools
+        for (const type in this) {
+          if (Array.isArray(this[type])) {
+            this[type].forEach(obj => {
+              resourceManager.disposeObject(obj);
+            });
+            this[type] = [];
+          }
+        }
+      }
+    };
   </script>
 </body>
 
